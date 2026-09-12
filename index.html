@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mixell</title>
+<style>
+:root{--bg:#08090d;--panel:#101218;--panel2:#171a22;--line:#292d38;--text:#f4f5f7;--muted:#9aa1af;--accent:#7c5cff}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{overflow:hidden}
+.app{height:100dvh;min-height:0;display:grid;grid-template-columns:300px minmax(0,1fr);transition:grid-template-columns .2s}
+body.sidebar-hidden .app{grid-template-columns:0 minmax(0,1fr)}
+aside{min-width:0;overflow:auto;background:var(--panel);border-right:1px solid var(--line);padding:20px;transition:.2s}
+body.sidebar-hidden aside{width:0;padding:0;overflow:hidden;border-right:0}
+main{height:100dvh;min-height:0;min-width:0;display:flex;flex-direction:column}
+header{height:64px;flex:0 0 64px;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--line)}
+.menu{background:#222631;padding:8px 11px;font-size:19px}
+.avatar{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#7c5cff,#36228c);display:grid;place-items:center;font-weight:900}
+.title{font-weight:800}.sub{font-size:12px;color:var(--muted)}
+.brand{font-size:28px;font-weight:900}.desc{font-size:12px;color:var(--muted);margin:3px 0 22px}
+label{display:block;color:var(--muted);font-size:12px;margin:15px 0 7px}
+input,textarea,select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px;font:inherit;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical}
+button{border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:800;padding:11px 14px;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.wide{width:100%;margin-top:14px}
+.row{display:flex;align-items:center;justify-content:space-between;margin-top:17px;color:var(--muted);font-size:13px}
+.toggle{width:45px;height:25px;border-radius:20px;background:#333744;padding:3px;cursor:pointer}
+.toggle span{display:block;width:19px;height:19px;background:#fff;border-radius:50%;transition:.2s}
+.toggle.on{background:var(--accent)}.toggle.on span{transform:translateX(20px)}
+.status{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.5}
+
+/* ChatGPT-like transcript: assistant replies are plain text, not speech bubbles. */
+#chat{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:34px 18px 90px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scroll-behavior:smooth}
+.thread{width:100%;max-width:860px;margin:0 auto}
+.msg{margin:0 0 30px}
+.msg.user{display:flex;justify-content:flex-end}
+.msg .name{font-size:13px;font-weight:800;margin-bottom:7px}
+.msg.assistant .name{color:var(--text)}
+.msg.assistant .bubble{background:transparent;border:0;padding:0;max-width:100%;line-height:1.7;font-size:15px}
+.msg.user .bubble{max-width:min(78%,620px);background:#30265e;padding:11px 15px;border-radius:18px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.assistant .bubble{white-space:pre-wrap;overflow-wrap:anywhere}
+.thinking{color:var(--muted);font-style:italic}
+.sources{margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.sources a{color:#a99aff;text-decoration:none}.sources a:hover{text-decoration:underline}
+
+.composer-wrap{flex:0 0 auto;border-top:1px solid var(--line);padding:14px 18px 16px;background:var(--bg)}
+.composer{width:100%;max-width:860px;margin:0 auto;background:#202124;border:1px solid #30333a;border-radius:27px;padding:7px;display:flex;align-items:flex-end;gap:6px}
+#message{min-height:40px;max-height:170px;resize:none;border:0;background:transparent;padding:9px 10px;border-radius:20px;line-height:1.4;flex:1}
+#message:focus{border:0}
+.send{width:42px;height:42px;border-radius:50%;padding:0;font-size:18px}
+.hint{width:100%;max-width:860px;margin:6px auto 0;text-align:center;color:#6f7684;font-size:10px}
+
+.empty{height:100%;display:flex;align-items:center;justify-content:center;padding:0 18px 70px}
+.empty-inner{width:100%;max-width:700px;text-align:center}
+.empty h1{font-size:27px;font-weight:500;margin:0 0 22px}
+.empty p{color:var(--muted);font-size:13px;margin:0}
+
+@media(max-width:720px){
+  aside{display:none}
+  .app{grid-template-columns:1fr}
+  .msg.user .bubble{max-width:88%}
+  #chat{padding-left:13px;padding-right:13px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand">Mixell</div>
+  <div class="desc">Youssefs personliga assistent 🤖✨</div>
+
+  <label>Mistral API-nyckel</label>
+  <input id="key" type="password" autocomplete="off" placeholder="Klistra in din Mistral API-nyckel">
+
+  <label>Modell</label>
+  <select id="model">
+    <option>mistral-small-latest</option>
+    <option>mistral-medium-latest</option>
+    <option>mistral-large-latest</option>
+  </select>
+
+  <label>Mixells personlighet</label>
+  <textarea id="instructions" rows="10">Du är Mixell, Youssefs personliga AI-assistent.
+
+Svara naturligt och tydligt. Svara på svenska när Youssef skriver svenska och byt språk när han ber om det.
+
+Använd många passande emojis när det känns naturligt 🤖✨🚀🔥😎💡🎮🌐🧠⚡👍❤️😂. Använd dem ofta, men låt svaret fortfarande vara lätt att läsa.
+
+Använd webbsökning när aktuell information behövs. När du använder webben ska du basera aktuella påståenden på sökningen och visa relevanta källor. Hitta inte på källor.</textarea>
+
+  <button class="wide" id="save">Spara inställningar</button>
+  <div class="row"><span>Realtime webbsökning</span><div id="webToggle" class="toggle on"><span></span></div></div>
+  <button class="wide" id="newChat" style="background:#252936">Ny chatt</button>
+  <div class="status" id="status">Redo.</div>
+</aside>
+
+<main>
+<header>
+  <button class="menu" id="menu" title="Visa/dölj sidopanel">☰</button>
+  <div class="avatar">M</div>
+  <div><div class="title">Mixell</div><div class="sub">Youssefs personliga assistent</div></div>
+</header>
+
+<section id="chat">
+  <div class="empty" id="empty">
+    <div class="empty-inner">
+      <h1>Hej Youssef 👋</h1>
+      <p>Vad vill du göra idag? 🚀</p>
+    </div>
+  </div>
+  <div class="thread" id="thread" hidden></div>
+</section>
+
+<div class="composer-wrap">
+  <div class="composer">
+    <textarea id="message" rows="1" placeholder="Fråga vad som helst"></textarea>
+    <button class="send" id="send" title="Skicka">↑</button>
+  </div>
+  <div class="hint">Enter = skicka · Shift+Enter = ny rad</div>
+</div>
+</main>
+</div>
+
+<script>
+"use strict";
+
+const ENDPOINT="https://api.mistral.ai/v1/conversations";
+const $=id=>document.getElementById(id);
+const key=$("key"), model=$("model"), instructions=$("instructions");
+const thread=$("thread"), empty=$("empty"), chat=$("chat");
+const message=$("message"), send=$("send"), status=$("status"), webToggle=$("webToggle");
+let conversationId=null, webSearch=true;
+const memStore={};
+const storage={getItem:k=>k in memStore?memStore[k]:null,setItem:(k,v)=>{memStore[k]=String(v)}};
+
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function setStatus(v){status.textContent=v}
+function showThread(){empty.hidden=true;thread.hidden=false}
+
+function addMessage(text,role,sources=[]){
+  showThread();
+  const row=document.createElement("div");
+  row.className="msg "+(role==="user"?"user":"assistant");
+
+  if(role==="assistant"){
+    const name=document.createElement("div");
+    name.className="name";
+    name.textContent="Mixell";
+    row.appendChild(name);
+  }
+
+  const bubble=document.createElement("div");
+  bubble.className="bubble";
+  bubble.textContent=text;
+  row.appendChild(bubble);
+
+  if(sources.length){
+    const box=document.createElement("div");
+    box.className="sources";
+    const seen=new Set(), list=[];
+    for(const s of sources){
+      if(s?.url&&!seen.has(s.url)){seen.add(s.url);list.push(s)}
+    }
+    if(list.length){
+      box.innerHTML="<b>Källor</b><br>"+list.map((s,i)=>
+        `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${i+1}. ${esc(s.title||s.url)}</a>`
+      ).join("<br>");
+      bubble.appendChild(box);
+    }
+  }
+
+  thread.appendChild(row);
+  requestAnimationFrame(()=>{chat.scrollTop=chat.scrollHeight});
+  return bubble;
+}
+
+function parseResponse(data){
+  const texts=[],sources=[];
+  function read(v){
+    if(v==null)return;
+    if(typeof v==="string"){if(v.trim())texts.push(v);return}
+    if(Array.isArray(v)){v.forEach(read);return}
+    if(typeof v==="object"){
+      if(v.type==="text"&&typeof v.text==="string"){texts.push(v.text);return}
+      if(v.type==="tool_reference"&&typeof v.url==="string"){
+        sources.push({url:v.url,title:typeof v.title==="string"?v.title:v.url});return
+      }
+      if(v.content!==undefined){read(v.content);return}
+    }
+  }
+  for(const out of (Array.isArray(data?.outputs)?data.outputs:[])){
+    if(out?.type==="message.output")read(out.content);
+  }
+  if(!texts.length)read(data?.choices?.[0]?.message?.content);
+  return {text:texts.join("").trim()||"Mixell fick inget text-svar från Mistral.",sources};
+}
+
+async function askMistral(userText){
+  if(!key.value.trim())throw new Error("Lägg in din Mistral API-nyckel i sidopanelen.");
+
+  let url=ENDPOINT, body;
+  if(!conversationId){
+    body={
+      model:model.value,
+      instructions:instructions.value,
+      inputs:[{role:"user",content:userText}],
+      store:true
+    };
+    if(webSearch)body.tools=[{type:"web_search"}];
+  }else{
+    url=ENDPOINT+"/"+encodeURIComponent(conversationId);
+    body={inputs:[{role:"user",content:userText}],store:true};
+  }
+
+  const res=await fetch(url,{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+key.value.trim()},
+    body:JSON.stringify(body)
+  });
+  const raw=await res.text();
+  let data;
+  try{data=JSON.parse(raw)}catch{throw new Error("Mistral skickade ett ogiltigt svar.")}
+  if(!res.ok)throw new Error(data?.message||data?.error?.message||("Mistral API-fel "+res.status));
+  conversationId=data?.conversation_id||conversationId;
+  return parseResponse(data);
+}
+
+async function sendMessage(){
+  const text=message.value.trim();
+  if(!text||send.disabled)return;
+
+  addMessage(text,"user");
+  message.value="";message.style.height="40px";
+  const bubble=addMessage("Mixell skriver...","assistant");
+  bubble.classList.add("thinking");
+  send.disabled=true;
+  setStatus(webSearch?"Mixell arbetar · webbsökning på 🔎":"Mixell arbetar...");
+
+  try{
+    const result=await askMistral(text);
+    bubble.classList.remove("thinking");
+    bubble.textContent=result.text;
+
+    if(result.sources.length){
+      const box=document.createElement("div");
+      box.className="sources";
+      const seen=new Set(),list=[];
+      for(const s of result.sources)if(s?.url&&!seen.has(s.url)){seen.add(s.url);list.push(s)}
+      if(list.length){
+        box.innerHTML="<b>Källor</b><br>"+list.map((s,i)=>
+          `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${i+1}. ${esc(s.title||s.url)}</a>`
+        ).join("<br>");
+        bubble.appendChild(box);
+      }
+    }
+    setStatus("Redo ✓");
+  }catch(e){
+    bubble.classList.remove("thinking");
+    bubble.textContent="⚠️ "+e.message;
+    setStatus("Något gick fel.");
+  }finally{
+    send.disabled=false;message.focus();
+  }
+}
+
+$("save").onclick=()=>{
+  storage.setItem("mixell_key",key.value.trim());
+  storage.setItem("mixell_model",model.value);
+  storage.setItem("mixell_instructions",instructions.value);
+  storage.setItem("mixell_web",String(webSearch));
+  setStatus("Inställningar sparade ✓");
+};
+
+webToggle.onclick=()=>{
+  webSearch=!webSearch;
+  webToggle.classList.toggle("on",webSearch);
+  storage.setItem("mixell_web",String(webSearch));
+  setStatus(webSearch?"Webbsökning på 🔎":"Webbsökning av");
+};
+
+$("menu").onclick=()=>{
+  document.body.classList.toggle("sidebar-hidden");
+  storage.setItem("mixell_sidebar",document.body.classList.contains("sidebar-hidden")?"1":"0");
+};
+
+$("newChat").onclick=()=>{
+  conversationId=null;
+  thread.innerHTML="";
+  thread.hidden=true;
+  empty.hidden=false;
+  setStatus("Ny chatt.");
+};
+
+send.onclick=sendMessage;
+message.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage()}
+});
+message.addEventListener("input",()=>{
+  message.style.height="40px";
+  message.style.height=Math.min(message.scrollHeight,170)+"px";
+});
+
+key.value=storage.getItem("mixell_key")||"";
+model.value=storage.getItem("mixell_model")||"mistral-small-latest";
+instructions.value=storage.getItem("mixell_instructions")||instructions.value;
+webSearch=storage.getItem("mixell_web")!=="false";
+webToggle.classList.toggle("on",webSearch);
+if(storage.getItem("mixell_sidebar")==="1")document.body.classList.add("sidebar-hidden");
+</script>
+</body>
+</html>
