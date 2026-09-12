@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mixell</title>
 <style>
-:root{--bg:#08090d;--panel:#101218;--panel2:#171a22;--line:#292d38;--text:#f4f5f7;--muted:#9aa1af;--accent:#7c5cff}
+:root{--bg:#0a0a0a;--panel:#141414;--panel2:#1c1c1c;--line:#2a2a2a;--text:#f5f5f5;--muted:#9a9a9a;--accent:#ff8c00}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
 body{overflow:hidden}
@@ -15,8 +15,8 @@ aside{min-width:0;overflow:auto;background:var(--panel);border-right:1px solid v
 body.sidebar-hidden aside{width:0;padding:0;overflow:hidden;border-right:0}
 main{height:100dvh;min-height:0;min-width:0;display:flex;flex-direction:column}
 header{height:64px;flex:0 0 64px;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--line)}
-.menu{background:#222631;padding:8px 11px;font-size:19px}
-.avatar{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#7c5cff,#36228c);display:grid;place-items:center;font-weight:900}
+.menu{background:#1e1e1e;padding:8px 11px;font-size:19px}
+.avatar{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#ff8c00,#cc6600);display:grid;place-items:center;font-weight:900}
 .title{font-weight:800}.sub{font-size:12px;color:var(--muted)}
 .brand{font-size:28px;font-weight:900}.desc{font-size:12px;color:var(--muted);margin:3px 0 22px}
 label{display:block;color:var(--muted);font-size:12px;margin:15px 0 7px}
@@ -40,14 +40,14 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .msg .name{font-size:13px;font-weight:800;margin-bottom:7px}
 .msg.assistant .name{color:var(--text)}
 .msg.assistant .bubble{background:transparent;border:0;padding:0;max-width:100%;line-height:1.7;font-size:15px}
-.msg.user .bubble{max-width:min(78%,620px);background:#30265e;padding:11px 15px;border-radius:18px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user .bubble{max-width:min(78%,620px);background:#3d2800;padding:11px 15px;border-radius:18px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
 .msg.assistant .bubble{white-space:pre-wrap;overflow-wrap:anywhere}
 .thinking{color:var(--muted);font-style:italic}
 .sources{margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
-.sources a{color:#a99aff;text-decoration:none}.sources a:hover{text-decoration:underline}
+.sources a{color:#ffaa33;text-decoration:none}.sources a:hover{text-decoration:underline}
 
 .composer-wrap{flex:0 0 auto;border-top:1px solid var(--line);padding:14px 18px 16px;background:var(--bg)}
-.composer{width:100%;max-width:860px;margin:0 auto;background:#202124;border:1px solid #30333a;border-radius:27px;padding:7px;display:flex;align-items:flex-end;gap:6px}
+.composer{width:100%;max-width:860px;margin:0 auto;background:#1a1a1a;border:1px solid #2e2e2e;border-radius:27px;padding:7px;display:flex;align-items:flex-end;gap:6px}
 #message{min-height:40px;max-height:170px;resize:none;border:0;background:transparent;padding:9px 10px;border-radius:20px;line-height:1.4;flex:1}
 #message:focus{border:0}
 .send{width:42px;height:42px;border-radius:50%;padding:0;font-size:18px}
@@ -72,8 +72,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div class="brand">Mixell</div>
   <div class="desc">Youssefs personliga assistent 🤖✨</div>
 
-  <label>Mistral API-nyckel</label>
-  <input id="key" type="password" autocomplete="off" placeholder="Klistra in din Mistral API-nyckel">
+  <label>API-nyckel</label>
+  <input id="key" type="password" autocomplete="off" placeholder="Klistra in din API-nyckel">
 
   <label>Modell</label>
   <select id="model">
@@ -93,7 +93,7 @@ Använd webbsökning när aktuell information behövs. När du använder webben 
 
   <button class="wide" id="save">Spara inställningar</button>
   <div class="row"><span>Realtime webbsökning</span><div id="webToggle" class="toggle on"><span></span></div></div>
-  <button class="wide" id="newChat" style="background:#252936">Ny chatt</button>
+  <button class="wide" id="newChat" style="background:#1e1e1e">Ny chatt</button>
   <div class="status" id="status">Redo.</div>
 </aside>
 
@@ -195,11 +195,11 @@ function parseResponse(data){
     if(out?.type==="message.output")read(out.content);
   }
   if(!texts.length)read(data?.choices?.[0]?.message?.content);
-  return {text:texts.join("").trim()||"Mixell fick inget text-svar från Mistral.",sources};
+  return {text:texts.join("").trim()||"Mixell fick inget text-svar.",sources};
 }
 
 async function askMistral(userText){
-  if(!key.value.trim())throw new Error("Lägg in din Mistral API-nyckel i sidopanelen.");
+  if(!key.value.trim())throw new Error("Lägg in din API-nyckel i sidopanelen.");
 
   let url=ENDPOINT, body;
   if(!conversationId){
@@ -222,8 +222,8 @@ async function askMistral(userText){
   });
   const raw=await res.text();
   let data;
-  try{data=JSON.parse(raw)}catch{throw new Error("Mistral skickade ett ogiltigt svar.")}
-  if(!res.ok)throw new Error(data?.message||data?.error?.message||("Mistral API-fel "+res.status));
+  try{data=JSON.parse(raw)}catch{throw new Error("Servern skickade ett ogiltigt svar.")}
+  if(!res.ok)throw new Error(data?.message||data?.error?.message||("API-fel "+res.status));
   conversationId=data?.conversation_id||conversationId;
   return parseResponse(data);
 }
